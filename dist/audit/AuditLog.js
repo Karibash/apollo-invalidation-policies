@@ -1,32 +1,34 @@
 import _ from "lodash";
-export default class AuditLog {
-    constructor() {
+var AuditLog = /** @class */ (function () {
+    function AuditLog() {
         this._log = [];
     }
-    log(event, type, group, meta) {
-        const auditLogEntry = {
+    AuditLog.prototype.log = function (event, type, group, meta) {
+        var auditLogEntry = {
             time: Date.now(),
-            type,
-            event,
-            meta,
-            group,
+            type: type,
+            event: event,
+            meta: meta,
+            group: group,
         };
         this._log.push(auditLogEntry);
-    }
-    getLog(filter) {
+    };
+    AuditLog.prototype.getLog = function (filter) {
         return _.filter(this._log, filter);
-    }
-    printLog(filter) {
+    };
+    AuditLog.prototype.printLog = function (filter) {
         this.getLog(filter).forEach(this.printLogEntry);
-    }
-    printLogEntry(entry) {
+    };
+    AuditLog.prototype.printLogEntry = function (entry) {
         var _a;
-        console.log(`%c event: ${entry.event}`, "color: green");
+        console.log("%c event: " + entry.event, "color: green");
         console.group();
-        console.log(`type: ${entry.type}`);
-        console.log(`time: ${entry.time}`);
-        console.log(`meta: ${JSON.stringify((_a = entry.meta) !== null && _a !== void 0 ? _a : {})}`);
+        console.log("type: " + entry.type);
+        console.log("time: " + entry.time);
+        console.log("meta: " + JSON.stringify((_a = entry.meta) !== null && _a !== void 0 ? _a : {}));
         console.groupEnd();
-    }
-}
+    };
+    return AuditLog;
+}());
+export default AuditLog;
 //# sourceMappingURL=AuditLog.js.map

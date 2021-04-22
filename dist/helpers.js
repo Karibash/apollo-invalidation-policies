@@ -18,7 +18,9 @@ export function makeEntityId(dataId, fieldName) {
 // In development, results are frozen and updating them as part of executing the read policy must be done
 // on a cloned object. This has no impact in production since objects are not frozen and will not be cloned:
 // https://github.com/apollographql/apollo-client/blob/master/src/utilities/common/maybeDeepFreeze.ts#L20:L20
-export const maybeDeepClone = (obj) => _.isPlainObject(obj) && Object.isFrozen(obj) ? _.cloneDeep(obj) : obj;
+export var maybeDeepClone = function (obj) {
+    return _.isPlainObject(obj) && Object.isFrozen(obj) ? _.cloneDeep(obj) : obj;
+};
 export var TypeOrFieldNameRegExp = /^[_a-z][_0-9a-z]*/i;
 export function fieldNameFromStoreName(storeFieldName) {
     var match = storeFieldName.match(TypeOrFieldNameRegExp);

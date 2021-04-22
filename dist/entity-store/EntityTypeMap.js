@@ -89,73 +89,74 @@ import { makeEntityId, isQuery, fieldNameFromStoreName } from "../helpers";
     }
     ```
  */
-export default class EntityTypeMap {
-    constructor() {
+var EntityTypeMap = /** @class */ (function () {
+    function EntityTypeMap() {
         this.entitiesByType = {};
         this.entitiesById = {};
     }
-    write(typename, dataId, storeFieldName, variables) {
-        const fieldName = storeFieldName
+    EntityTypeMap.prototype.write = function (typename, dataId, storeFieldName, variables) {
+        var _a;
+        var fieldName = storeFieldName
             ? fieldNameFromStoreName(storeFieldName)
             : undefined;
-        const entityId = makeEntityId(dataId, fieldName);
-        const existingTypeMapEntity = this.readEntityById(entityId);
+        var entityId = makeEntityId(dataId, fieldName);
+        var existingTypeMapEntity = this.readEntityById(entityId);
         if (existingTypeMapEntity) {
             if (isQuery(dataId) && storeFieldName) {
-                const storeFieldNameEntry = existingTypeMapEntity.storeFieldNames
+                var storeFieldNameEntry = existingTypeMapEntity.storeFieldNames
                     .entries[storeFieldName];
                 if (storeFieldNameEntry) {
                     storeFieldNameEntry.variables = variables;
                 }
                 else {
                     existingTypeMapEntity.storeFieldNames.entries[storeFieldName] = {
-                        variables,
+                        variables: variables,
                     };
                     existingTypeMapEntity.storeFieldNames.__size++;
                 }
             }
         }
         else {
-            let newEntity;
-            const cacheTime = Date.now();
+            var newEntity = void 0;
+            var cacheTime = Date.now();
             if (isQuery(dataId) && storeFieldName) {
                 newEntity = {
-                    dataId,
-                    typename,
-                    fieldName,
+                    dataId: dataId,
+                    typename: typename,
+                    fieldName: fieldName,
                     storeFieldNames: {
                         __size: 1,
-                        entries: {
-                            [storeFieldName]: { variables, cacheTime },
-                        },
+                        entries: (_a = {},
+                            _a[storeFieldName] = { variables: variables, cacheTime: cacheTime },
+                            _a),
                     },
                 };
             }
             else {
                 newEntity = {
-                    dataId,
-                    typename,
-                    cacheTime,
+                    dataId: dataId,
+                    typename: typename,
+                    cacheTime: cacheTime,
                 };
             }
             _.set(this.entitiesByType, [typename, entityId], newEntity);
             this.entitiesById[entityId] = newEntity;
         }
-    }
-    evict(dataId, storeFieldName) {
+    };
+    EntityTypeMap.prototype.evict = function (dataId, storeFieldName) {
         var _a;
-        const fieldName = storeFieldName
+        var fieldName = storeFieldName
             ? fieldNameFromStoreName(storeFieldName)
             : null;
-        const entityId = makeEntityId(dataId, fieldName);
-        const entity = this.readEntityById(entityId);
+        var entityId = makeEntityId(dataId, fieldName);
+        var entity = this.readEntityById(entityId);
         if (!entity) {
             return;
         }
         // If the fieldName is the same as the passed storeFieldName, then all argument variants of that field
         // are being removed.
         if (storeFieldName && fieldName !== storeFieldName) {
-            const storeFieldNameEntries = (_a = this.entitiesByType[entity.typename][entityId]) === null || _a === void 0 ? void 0 : _a.storeFieldNames;
+            var storeFieldNameEntries = (_a = this.entitiesByType[entity.typename][entityId]) === null || _a === void 0 ? void 0 : _a.storeFieldNames;
             if (storeFieldNameEntries) {
                 if (storeFieldNameEntries.__size === 1) {
                     delete this.entitiesByType[entity.typename][entityId];
@@ -171,22 +172,22 @@ export default class EntityTypeMap {
             delete this.entitiesByType[entity.typename][entityId];
             delete this.entitiesById[entityId];
         }
-    }
-    readEntitiesByType(typeName) {
+    };
+    EntityTypeMap.prototype.readEntitiesByType = function (typeName) {
         return this.entitiesByType[typeName] || null;
-    }
-    readEntityById(entityId) {
+    };
+    EntityTypeMap.prototype.readEntityById = function (entityId) {
         return this.entitiesById[entityId] || null;
-    }
-    renewEntity(dataId, storeFieldName) {
-        const fieldName = storeFieldName
+    };
+    EntityTypeMap.prototype.renewEntity = function (dataId, storeFieldName) {
+        var fieldName = storeFieldName
             ? fieldNameFromStoreName(storeFieldName)
             : undefined;
-        const entity = this.entitiesById[makeEntityId(dataId, fieldName)];
+        var entity = this.entitiesById[makeEntityId(dataId, fieldName)];
         if (entity) {
-            const cacheTime = Date.now();
+            var cacheTime = Date.now();
             if (isQuery(dataId) && storeFieldName) {
-                const storeFieldNameEntry = entity.storeFieldNames.entries[storeFieldName];
+                var storeFieldNameEntry = entity.storeFieldNames.entries[storeFieldName];
                 if (storeFieldNameEntry) {
                     storeFieldNameEntry.cacheTime = cacheTime;
                 }
@@ -195,27 +196,30 @@ export default class EntityTypeMap {
                 entity.cacheTime = cacheTime;
             }
         }
-    }
-    restore(entitiesById) {
+    };
+    EntityTypeMap.prototype.restore = function (entitiesById) {
+        var _this = this;
         this.entitiesById = entitiesById;
-        Object.keys(entitiesById).forEach((entityId) => {
-            const entity = entitiesById[entityId];
-            if (!this.entitiesByType[entity.typename]) {
-                this.entitiesByType[entity.typename] = {};
+        Object.keys(entitiesById).forEach(function (entityId) {
+            var entity = entitiesById[entityId];
+            if (!_this.entitiesByType[entity.typename]) {
+                _this.entitiesByType[entity.typename] = {};
             }
-            this.entitiesByType[entity.typename][entityId] = entity;
+            _this.entitiesByType[entity.typename][entityId] = entity;
         });
-    }
-    extract() {
-        const { entitiesById, entitiesByType } = this;
+    };
+    EntityTypeMap.prototype.extract = function () {
+        var _a = this, entitiesById = _a.entitiesById, entitiesByType = _a.entitiesByType;
         return {
-            entitiesById,
-            entitiesByType,
+            entitiesById: entitiesById,
+            entitiesByType: entitiesByType,
         };
-    }
-    clear() {
+    };
+    EntityTypeMap.prototype.clear = function () {
         this.entitiesById = {};
         this.entitiesByType = {};
-    }
-}
+    };
+    return EntityTypeMap;
+}());
+export default EntityTypeMap;
 //# sourceMappingURL=EntityTypeMap.js.map

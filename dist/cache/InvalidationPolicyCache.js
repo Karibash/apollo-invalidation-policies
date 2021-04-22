@@ -1,3 +1,16 @@
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __rest = (this && this.__rest) || function (s, e) {
     var t = {};
     for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
@@ -19,42 +32,64 @@ import { InvalidationPolicyEvent } from "../policies/types";
 /**
  * Extension of Apollo in-memory cache which adds support for invalidation policies.
  */
-export default class InvalidationPolicyCache extends InMemoryCache {
-    constructor(config = {}) {
-        const { invalidationPolicies = {} } = config, inMemoryCacheConfig = __rest(config, ["invalidationPolicies"]);
-        super(inMemoryCacheConfig);
+var InvalidationPolicyCache = /** @class */ (function (_super) {
+    __extends(InvalidationPolicyCache, _super);
+    function InvalidationPolicyCache(config) {
+        if (config === void 0) { config = {}; }
+        var _this = this;
+        var _a = config.invalidationPolicies, invalidationPolicies = _a === void 0 ? {} : _a, inMemoryCacheConfig = __rest(config, ["invalidationPolicies"]);
+        _this = _super.call(this, inMemoryCacheConfig) || this;
         // @ts-ignore
-        this.entityStoreRoot = this.data;
-        this.isBroadcasting = false;
-        this.entityTypeMap = new EntityTypeMap();
+        _this.entityStoreRoot = _this.data;
+        _this.isBroadcasting = false;
+        _this.entityTypeMap = new EntityTypeMap();
         new EntityStoreWatcher({
-            entityStore: this.entityStoreRoot,
-            entityTypeMap: this.entityTypeMap,
-            policies: this.policies,
+            entityStore: _this.entityStoreRoot,
+            entityTypeMap: _this.entityTypeMap,
+            policies: _this.policies,
         });
-        this.invalidationPolicyManager = new InvalidationPolicyManager({
+        _this.invalidationPolicyManager = new InvalidationPolicyManager({
             policies: invalidationPolicies,
-            entityTypeMap: this.entityTypeMap,
+            entityTypeMap: _this.entityTypeMap,
             cacheOperations: {
-                evict: (...args) => this.evict(...args),
-                modify: (...args) => this.modify(...args),
-                readField: (...args) => this.readField(...args),
+                evict: function () {
+                    var args = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        args[_i] = arguments[_i];
+                    }
+                    return _this.evict.apply(_this, args);
+                },
+                modify: function () {
+                    var args = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        args[_i] = arguments[_i];
+                    }
+                    return _this.modify.apply(_this, args);
+                },
+                readField: function () {
+                    var args = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        args[_i] = arguments[_i];
+                    }
+                    return _this.readField.apply(_this, args);
+                },
             },
         });
-        this.cacheResultProcessor = new CacheResultProcessor({
-            invalidationPolicyManager: this.invalidationPolicyManager,
-            entityTypeMap: this.entityTypeMap,
-            cache: this,
+        _this.cacheResultProcessor = new CacheResultProcessor({
+            invalidationPolicyManager: _this.invalidationPolicyManager,
+            entityTypeMap: _this.entityTypeMap,
+            cache: _this,
         });
+        return _this;
     }
-    readField(fieldNameOrOptions, from) {
+    InvalidationPolicyCache.prototype.readField = function (fieldNameOrOptions, from) {
         if (!fieldNameOrOptions) {
             return;
         }
-        const options = typeof fieldNameOrOptions === "string"
+        var options = typeof fieldNameOrOptions === "string"
             ? {
                 fieldName: fieldNameOrOptions,
-                from,
+                from: from,
             }
             : fieldNameOrOptions;
         if (void 0 === options.from) {
@@ -63,52 +98,53 @@ export default class InvalidationPolicyCache extends InMemoryCache {
         return this.policies.readField(options, {
             store: this.entityStoreRoot,
         });
-    }
-    broadcastWatches() {
+    };
+    InvalidationPolicyCache.prototype.broadcastWatches = function () {
         this.isBroadcasting = true;
-        super.broadcastWatches();
+        _super.prototype.broadcastWatches.call(this);
         this.isBroadcasting = false;
-    }
+    };
     // Determines whether the cache's data reference is set to the root store. If not, then there is an ongoing optimistic transaction
     // being applied to a new layer.
-    isOperatingOnRootData() {
+    InvalidationPolicyCache.prototype.isOperatingOnRootData = function () {
         // @ts-ignore
         return this.data === this.entityStoreRoot;
-    }
-    modify(options) {
+    };
+    InvalidationPolicyCache.prototype.modify = function (options) {
+        var _this = this;
         var _a;
-        const modifyResult = super.modify(options);
+        var modifyResult = _super.prototype.modify.call(this, options);
         if (!this.invalidationPolicyManager.isPolicyEventActive(InvalidationPolicyEvent.Write) ||
             !modifyResult) {
             return modifyResult;
         }
-        const { id = "ROOT_QUERY", fields } = options;
+        var _b = options.id, id = _b === void 0 ? "ROOT_QUERY" : _b, fields = options.fields;
         if (isQuery(id)) {
-            Object.keys(fields).forEach((storeFieldName) => {
+            Object.keys(fields).forEach(function (storeFieldName) {
                 var _a;
-                const fieldName = fieldNameFromStoreName(storeFieldName);
-                const typename = (_a = this.entityTypeMap.readEntityById(makeEntityId(id, fieldName))) === null || _a === void 0 ? void 0 : _a.typename;
+                var fieldName = fieldNameFromStoreName(storeFieldName);
+                var typename = (_a = _this.entityTypeMap.readEntityById(makeEntityId(id, fieldName))) === null || _a === void 0 ? void 0 : _a.typename;
                 if (!typename) {
                     return;
                 }
-                this.invalidationPolicyManager.runWritePolicy(typename, {
+                _this.invalidationPolicyManager.runWritePolicy(typename, {
                     parent: {
-                        id,
-                        fieldName,
-                        storeFieldName,
+                        id: id,
+                        fieldName: fieldName,
+                        storeFieldName: storeFieldName,
                         ref: makeReference(id),
                     },
                 });
             });
         }
         else {
-            const typename = (_a = this.entityTypeMap.readEntityById(id)) === null || _a === void 0 ? void 0 : _a.typename;
+            var typename = (_a = this.entityTypeMap.readEntityById(id)) === null || _a === void 0 ? void 0 : _a.typename;
             if (!typename) {
                 return modifyResult;
             }
             this.invalidationPolicyManager.runWritePolicy(typename, {
                 parent: {
-                    id,
+                    id: id,
                     ref: makeReference(id),
                 },
             });
@@ -117,9 +153,9 @@ export default class InvalidationPolicyCache extends InMemoryCache {
             this.broadcastWatches();
         }
         return modifyResult;
-    }
-    write(options) {
-        const writeResult = super.write(options);
+    };
+    InvalidationPolicyCache.prototype.write = function (options) {
+        var writeResult = _super.prototype.write.call(this, options);
         // Do not trigger a write policy if the current write is being applied to an optimistic data layer since
         // the policy will later be applied when the server data response is received.
         if ((!this.invalidationPolicyManager.isPolicyEventActive(InvalidationPolicyEvent.Write) &&
@@ -132,11 +168,11 @@ export default class InvalidationPolicyCache extends InMemoryCache {
             this.broadcastWatches();
         }
         return writeResult;
-    }
-    evict(options) {
+    };
+    InvalidationPolicyCache.prototype.evict = function (options) {
         var _a;
-        const { fieldName, args } = options;
-        let { id } = options;
+        var fieldName = options.fieldName, args = options.args;
+        var id = options.id;
         if (!id) {
             if (Object.prototype.hasOwnProperty.call(options, "id")) {
                 return false;
@@ -144,45 +180,47 @@ export default class InvalidationPolicyCache extends InMemoryCache {
             id = "ROOT_QUERY";
         }
         if (this.invalidationPolicyManager.isPolicyEventActive(InvalidationPolicyEvent.Evict)) {
-            const { typename } = (_a = this.entityTypeMap.readEntityById(makeEntityId(id, fieldName))) !== null && _a !== void 0 ? _a : {};
+            var typename = ((_a = this.entityTypeMap.readEntityById(makeEntityId(id, fieldName))) !== null && _a !== void 0 ? _a : {}).typename;
             if (typename) {
-                const storeFieldName = isQuery(id) && fieldName
+                var storeFieldName = isQuery(id) && fieldName
                     ? this.policies.getStoreFieldName({
-                        typename,
-                        fieldName,
-                        args,
+                        typename: typename,
+                        fieldName: fieldName,
+                        args: args,
                     })
                     : undefined;
                 this.invalidationPolicyManager.runEvictPolicy(typename, {
                     parent: {
-                        id,
-                        fieldName,
-                        storeFieldName,
+                        id: id,
+                        fieldName: fieldName,
+                        storeFieldName: storeFieldName,
                         variables: args,
                         ref: makeReference(id),
                     },
                 });
             }
         }
-        return super.evict(options);
-    }
+        return _super.prototype.evict.call(this, options);
+    };
     // Returns all expired entities whose cache time exceeds their type's timeToLive or as a fallback
     // the global timeToLive if specified. Evicts the expired entities by default, with an option to only report
     // them.
-    _expire(reportOnly = false) {
-        const { entitiesById } = this.entityTypeMap.extract();
-        const expiredEntityIds = [];
-        Object.keys(entitiesById).forEach((entityId) => {
-            const entity = entitiesById[entityId];
-            const { storeFieldNames, dataId, fieldName, typename } = entity;
+    InvalidationPolicyCache.prototype._expire = function (reportOnly) {
+        var _this = this;
+        if (reportOnly === void 0) { reportOnly = false; }
+        var entitiesById = this.entityTypeMap.extract().entitiesById;
+        var expiredEntityIds = [];
+        Object.keys(entitiesById).forEach(function (entityId) {
+            var entity = entitiesById[entityId];
+            var storeFieldNames = entity.storeFieldNames, dataId = entity.dataId, fieldName = entity.fieldName, typename = entity.typename;
             if (isQuery(dataId) && storeFieldNames) {
-                Object.keys(storeFieldNames.entries).forEach((storeFieldName) => {
-                    const isExpired = this.invalidationPolicyManager.runReadPolicy({
-                        typename,
-                        dataId,
-                        fieldName,
-                        storeFieldName,
-                        reportOnly,
+                Object.keys(storeFieldNames.entries).forEach(function (storeFieldName) {
+                    var isExpired = _this.invalidationPolicyManager.runReadPolicy({
+                        typename: typename,
+                        dataId: dataId,
+                        fieldName: fieldName,
+                        storeFieldName: storeFieldName,
+                        reportOnly: reportOnly,
                     });
                     if (isExpired) {
                         expiredEntityIds.push(makeEntityId(dataId, storeFieldName));
@@ -190,11 +228,11 @@ export default class InvalidationPolicyCache extends InMemoryCache {
                 });
             }
             else {
-                const isExpired = this.invalidationPolicyManager.runReadPolicy({
-                    typename,
-                    dataId,
-                    fieldName,
-                    reportOnly,
+                var isExpired = _this.invalidationPolicyManager.runReadPolicy({
+                    typename: typename,
+                    dataId: dataId,
+                    fieldName: fieldName,
+                    reportOnly: reportOnly,
                 });
                 if (isExpired) {
                     expiredEntityIds.push(makeEntityId(dataId));
@@ -205,49 +243,60 @@ export default class InvalidationPolicyCache extends InMemoryCache {
             this.broadcastWatches();
         }
         return expiredEntityIds;
-    }
+    };
     // Expires all entities still present in the cache that have exceeded their timeToLive. By default entities are evicted
     // lazily on read if their entity is expired. Use this expire API to eagerly remove expired entities.
-    expire() {
+    InvalidationPolicyCache.prototype.expire = function () {
         return this._expire(false);
-    }
+    };
     // Returns all expired entities still present in the cache.
-    expiredEntities() {
+    InvalidationPolicyCache.prototype.expiredEntities = function () {
         return this._expire(true);
-    }
+    };
     // Activates the provided policy events (on read, on write, on evict) or by default all policy events.
-    activatePolicyEvents(...policyEvents) {
+    InvalidationPolicyCache.prototype.activatePolicyEvents = function () {
+        var _a;
+        var policyEvents = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            policyEvents[_i] = arguments[_i];
+        }
         if (policyEvents.length > 0) {
-            this.invalidationPolicyManager.activatePolicies(...policyEvents);
+            (_a = this.invalidationPolicyManager).activatePolicies.apply(_a, policyEvents);
         }
         else {
             this.invalidationPolicyManager.activatePolicies(InvalidationPolicyEvent.Read, InvalidationPolicyEvent.Write, InvalidationPolicyEvent.Evict);
         }
-    }
+    };
     // Deactivates the provided policy events (on read, on write, on evict) or by default all policy events.
-    deactivatePolicyEvents(...policyEvents) {
+    InvalidationPolicyCache.prototype.deactivatePolicyEvents = function () {
+        var _a;
+        var policyEvents = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            policyEvents[_i] = arguments[_i];
+        }
         if (policyEvents.length > 0) {
-            this.invalidationPolicyManager.deactivatePolicies(...policyEvents);
+            (_a = this.invalidationPolicyManager).deactivatePolicies.apply(_a, policyEvents);
         }
         else {
             this.invalidationPolicyManager.deactivatePolicies(InvalidationPolicyEvent.Read, InvalidationPolicyEvent.Write, InvalidationPolicyEvent.Evict);
         }
-    }
+    };
     // Returns the policy events that are currently active.
-    activePolicyEvents() {
+    InvalidationPolicyCache.prototype.activePolicyEvents = function () {
+        var _this = this;
         return [
             InvalidationPolicyEvent.Read,
             InvalidationPolicyEvent.Write,
             InvalidationPolicyEvent.Evict
-        ].filter(policyEvent => this.invalidationPolicyManager.isPolicyEventActive(policyEvent));
-    }
-    read(options) {
-        const result = super.read(options);
+        ].filter(function (policyEvent) { return _this.invalidationPolicyManager.isPolicyEventActive(policyEvent); });
+    };
+    InvalidationPolicyCache.prototype.read = function (options) {
+        var result = _super.prototype.read.call(this, options);
         if (!this.invalidationPolicyManager.isPolicyEventActive(InvalidationPolicyEvent.Read)) {
             return result;
         }
-        const processedResult = maybeDeepClone(result);
-        const processedResultStatus = this.cacheResultProcessor.processReadResult(processedResult, options);
+        var processedResult = maybeDeepClone(result);
+        var processedResultStatus = this.cacheResultProcessor.processReadResult(processedResult, options);
         if (processedResultStatus === ReadResultStatus.Complete) {
             return result;
         }
@@ -255,9 +304,9 @@ export default class InvalidationPolicyCache extends InMemoryCache {
         return processedResultStatus === ReadResultStatus.Evicted
             ? null
             : processedResult;
-    }
-    diff(options) {
-        const cacheDiff = super.diff(options);
+    };
+    InvalidationPolicyCache.prototype.diff = function (options) {
+        var cacheDiff = _super.prototype.diff.call(this, options);
         // Diff calls made by `broadcastWatches` should not trigger the read policy
         // as these are internal reads not reflective of client action and can lead to recursive recomputation of cached data which is an error.
         // Instead, diffs will trigger the read policies for client-based reads like `readCache` invocations from watched queries outside
@@ -266,9 +315,9 @@ export default class InvalidationPolicyCache extends InMemoryCache {
             this.isBroadcasting) {
             return cacheDiff;
         }
-        const { result } = cacheDiff;
-        const processedResult = maybeDeepClone(result);
-        const processedResultStatus = this.cacheResultProcessor.processReadResult(processedResult, options);
+        var result = cacheDiff.result;
+        var processedResult = maybeDeepClone(result);
+        var processedResultStatus = this.cacheResultProcessor.processReadResult(processedResult, options);
         if (processedResultStatus === ReadResultStatus.Complete) {
             return cacheDiff;
         }
@@ -279,15 +328,19 @@ export default class InvalidationPolicyCache extends InMemoryCache {
                 ? undefined
                 : processedResult;
         return cacheDiff;
-    }
-    extract(optimistic = false, withInvalidation = true) {
-        const extractedCache = super.extract(optimistic);
+    };
+    InvalidationPolicyCache.prototype.extract = function (optimistic, withInvalidation) {
+        if (optimistic === void 0) { optimistic = false; }
+        if (withInvalidation === void 0) { withInvalidation = true; }
+        var extractedCache = _super.prototype.extract.call(this, optimistic);
         if (withInvalidation) {
             // The entitiesById are sufficient alone for reconstructing the type map, so to
             // minimize payload size only inject the entitiesById object into the extracted cache
             extractedCache.invalidation = _.pick(this.entityTypeMap.extract(), "entitiesById");
         }
         return extractedCache;
-    }
-}
+    };
+    return InvalidationPolicyCache;
+}(InMemoryCache));
+export default InvalidationPolicyCache;
 //# sourceMappingURL=InvalidationPolicyCache.js.map

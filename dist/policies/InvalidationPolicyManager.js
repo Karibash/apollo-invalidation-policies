@@ -1,3 +1,14 @@
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __rest = (this && this.__rest) || function (s, e) {
     var t = {};
     for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
@@ -17,25 +28,26 @@ import { RenewalPolicy } from "./types";
 /**
  * Executes invalidation policies for types when they are modified, evicted or read from the cache.
  */
-export default class InvalidationPolicyManager {
-    constructor(config) {
+var InvalidationPolicyManager = /** @class */ (function () {
+    function InvalidationPolicyManager(config) {
         this.config = config;
         this.policyActionStorage = {};
-        const { cacheOperations: { readField, evict, modify }, } = this.config;
+        var _a = this.config.cacheOperations, readField = _a.readField, evict = _a.evict, modify = _a.modify;
         // Watch broadcasts by evict and modify operations called by policy actions
         // are suppressed until after all policy actions have run.
         this.mutedCacheOperations = {
-            readField,
-            evict: (options) => evict(Object.assign(Object.assign({}, options), { broadcast: false })),
-            modify: (options) => modify(Object.assign(Object.assign({}, options), { broadcast: false })),
+            readField: readField,
+            evict: function (options) { return evict(__assign(__assign({}, options), { broadcast: false })); },
+            modify: function (options) { return modify(__assign(__assign({}, options), { broadcast: false })); },
         };
         this.activePolicyEvents = this.activateInitialPolicyEvents();
     }
-    activateInitialPolicyEvents() {
-        const { policies } = this.config;
-        const { types: policyTypes = {}, timeToLive: defaultTimeToLive } = policies;
-        return Object.keys(policyTypes).reduce((acc, type) => {
-            const policy = policyTypes[type];
+    InvalidationPolicyManager.prototype.activateInitialPolicyEvents = function () {
+        var _a;
+        var policies = this.config.policies;
+        var _b = policies.types, policyTypes = _b === void 0 ? {} : _b, defaultTimeToLive = policies.timeToLive;
+        return Object.keys(policyTypes).reduce(function (acc, type) {
+            var policy = policyTypes[type];
             acc[InvalidationPolicyEvent.Read] =
                 acc[InvalidationPolicyEvent.Read] || !!policy.timeToLive;
             acc[InvalidationPolicyEvent.Write] =
@@ -45,86 +57,88 @@ export default class InvalidationPolicyManager {
                 acc[InvalidationPolicyEvent.Evict] ||
                     !!policy[InvalidationPolicyLifecycleEvent.Evict];
             return acc;
-        }, {
-            [InvalidationPolicyEvent.Read]: !!defaultTimeToLive,
-            [InvalidationPolicyEvent.Write]: false,
-            [InvalidationPolicyEvent.Evict]: false,
-        });
-    }
-    getPolicy(typeName) {
+        }, (_a = {},
+            _a[InvalidationPolicyEvent.Read] = !!defaultTimeToLive,
+            _a[InvalidationPolicyEvent.Write] = false,
+            _a[InvalidationPolicyEvent.Evict] = false,
+            _a));
+    };
+    InvalidationPolicyManager.prototype.getPolicy = function (typeName) {
         var _a, _b;
         return ((_b = (_a = this.config.policies) === null || _a === void 0 ? void 0 : _a.types) === null || _b === void 0 ? void 0 : _b[typeName]) || null;
-    }
-    getPolicyActionStorage(identifier) {
-        const existingStorage = this.policyActionStorage[identifier];
+    };
+    InvalidationPolicyManager.prototype.getPolicyActionStorage = function (identifier) {
+        var existingStorage = this.policyActionStorage[identifier];
         if (!existingStorage) {
             this.policyActionStorage[identifier] = {};
         }
         return this.policyActionStorage[identifier];
-    }
-    getTypePolicyForEvent(typeName, policyEvent) {
-        const policyForType = this.getPolicy(typeName);
+    };
+    InvalidationPolicyManager.prototype.getTypePolicyForEvent = function (typeName, policyEvent) {
+        var policyForType = this.getPolicy(typeName);
         if (!policyForType) {
             return null;
         }
         return policyForType[InvalidationPolicyLifecycleEvent[policyEvent]];
-    }
-    runPolicyEvent(typeName, policyEvent, policyMeta) {
-        const { entityTypeMap } = this.config;
-        const { mutedCacheOperations } = this;
-        const typePolicyForEvent = this.getTypePolicyForEvent(typeName, policyEvent);
+    };
+    InvalidationPolicyManager.prototype.runPolicyEvent = function (typeName, policyEvent, policyMeta) {
+        var _this = this;
+        var entityTypeMap = this.config.entityTypeMap;
+        var mutedCacheOperations = this.mutedCacheOperations;
+        var typePolicyForEvent = this.getTypePolicyForEvent(typeName, policyEvent);
         if (!typePolicyForEvent) {
             return;
         }
-        const { __default: defaultPolicyAction } = typePolicyForEvent, restTypePolicyTypeNames = __rest(typePolicyForEvent, ["__default"]);
+        var defaultPolicyAction = typePolicyForEvent.__default, restTypePolicyTypeNames = __rest(typePolicyForEvent, ["__default"]);
         if (defaultPolicyAction) {
-            defaultPolicyAction(mutedCacheOperations, Object.assign({ storage: this.getPolicyActionStorage(`${typeName}__default`) }, policyMeta));
+            defaultPolicyAction(mutedCacheOperations, __assign({ storage: this.getPolicyActionStorage(typeName + "__default") }, policyMeta));
         }
-        Object.keys(restTypePolicyTypeNames).forEach((typePolicyTypeName) => {
+        Object.keys(restTypePolicyTypeNames).forEach(function (typePolicyTypeName) {
             var _a;
-            const typeMapEntities = (_a = entityTypeMap.readEntitiesByType(typePolicyTypeName)) !== null && _a !== void 0 ? _a : {};
-            const policyAction = typePolicyForEvent[typePolicyTypeName];
-            Object.values(typeMapEntities).forEach((typeMapEntity) => {
-                const { dataId, fieldName, storeFieldNames } = typeMapEntity;
+            var typeMapEntities = (_a = entityTypeMap.readEntitiesByType(typePolicyTypeName)) !== null && _a !== void 0 ? _a : {};
+            var policyAction = typePolicyForEvent[typePolicyTypeName];
+            Object.values(typeMapEntities).forEach(function (typeMapEntity) {
+                var dataId = typeMapEntity.dataId, fieldName = typeMapEntity.fieldName, storeFieldNames = typeMapEntity.storeFieldNames;
                 if (storeFieldNames) {
-                    Object.keys(storeFieldNames.entries).forEach((storeFieldName) => {
-                        policyAction(mutedCacheOperations, Object.assign({ id: dataId, fieldName,
-                            storeFieldName, variables: storeFieldNames.entries[storeFieldName].variables, ref: makeReference(dataId), storage: this.getPolicyActionStorage(storeFieldName) }, policyMeta));
+                    Object.keys(storeFieldNames.entries).forEach(function (storeFieldName) {
+                        policyAction(mutedCacheOperations, __assign({ id: dataId, fieldName: fieldName,
+                            storeFieldName: storeFieldName, variables: storeFieldNames.entries[storeFieldName].variables, ref: makeReference(dataId), storage: _this.getPolicyActionStorage(storeFieldName) }, policyMeta));
                     });
                 }
                 else {
-                    policyAction(mutedCacheOperations, Object.assign({ id: dataId, storage: this.getPolicyActionStorage(dataId), ref: makeReference(dataId) }, policyMeta));
+                    policyAction(mutedCacheOperations, __assign({ id: dataId, storage: _this.getPolicyActionStorage(dataId), ref: makeReference(dataId) }, policyMeta));
                 }
             });
         });
-    }
-    getRenewalPolicyForType(typename) {
+    };
+    InvalidationPolicyManager.prototype.getRenewalPolicyForType = function (typename) {
         var _a, _b, _c, _d;
-        const { policies } = this.config;
+        var policies = this.config.policies;
         return ((_d = (_c = (_b = (_a = policies.types) === null || _a === void 0 ? void 0 : _a[typename]) === null || _b === void 0 ? void 0 : _b.renewalPolicy) !== null && _c !== void 0 ? _c : policies.renewalPolicy) !== null && _d !== void 0 ? _d : RenewalPolicy.WriteOnly);
-    }
-    runWritePolicy(typeName, policyMeta) {
+    };
+    InvalidationPolicyManager.prototype.runWritePolicy = function (typeName, policyMeta) {
         return this.runPolicyEvent(typeName, InvalidationPolicyEvent.Write, policyMeta);
-    }
-    runEvictPolicy(typeName, policyMeta) {
+    };
+    InvalidationPolicyManager.prototype.runEvictPolicy = function (typeName, policyMeta) {
         return this.runPolicyEvent(typeName, InvalidationPolicyEvent.Evict, policyMeta);
-    }
+    };
     // Runs the read poliy on the entity, returning whether its TTL was expired.
-    runReadPolicy({ typename, dataId, fieldName, storeFieldName, reportOnly = false, }) {
-        var _a;
-        const { cacheOperations, entityTypeMap, policies } = this.config;
-        const entityId = makeEntityId(dataId, fieldName);
-        const typeMapEntity = entityTypeMap.readEntityById(entityId);
+    InvalidationPolicyManager.prototype.runReadPolicy = function (_a) {
+        var _b;
+        var typename = _a.typename, dataId = _a.dataId, fieldName = _a.fieldName, storeFieldName = _a.storeFieldName, _c = _a.reportOnly, reportOnly = _c === void 0 ? false : _c;
+        var _d = this.config, cacheOperations = _d.cacheOperations, entityTypeMap = _d.entityTypeMap, policies = _d.policies;
+        var entityId = makeEntityId(dataId, fieldName);
+        var typeMapEntity = entityTypeMap.readEntityById(entityId);
         if (!typeMapEntity) {
             return false;
         }
-        let entityCacheTime;
+        var entityCacheTime;
         // If a read is done against an entity before it has ever been written, it would not be present in the cache yet and should not attempt
         // to have read policy eviction run on it. This can occur in the case of fetching a query field over the network for example, where first
         // before it has come back from the network, the Apollo Client tries to diff it against the store to see what the existing value is for it,
         // but on first fetch it would not exist.
         if (storeFieldName && !!typeMapEntity.storeFieldNames) {
-            const entityForStoreFieldName = typeMapEntity.storeFieldNames.entries[storeFieldName];
+            var entityForStoreFieldName = typeMapEntity.storeFieldNames.entries[storeFieldName];
             if (!entityForStoreFieldName) {
                 return false;
             }
@@ -133,7 +147,7 @@ export default class InvalidationPolicyManager {
         else {
             entityCacheTime = typeMapEntity.cacheTime;
         }
-        const timeToLive = ((_a = this.getPolicy(typename)) === null || _a === void 0 ? void 0 : _a.timeToLive) || policies.timeToLive;
+        var timeToLive = ((_b = this.getPolicy(typename)) === null || _b === void 0 ? void 0 : _b.timeToLive) || policies.timeToLive;
         if (_.isNumber(entityCacheTime) &&
             timeToLive &&
             Date.now() > entityCacheTime + timeToLive) {
@@ -147,15 +161,27 @@ export default class InvalidationPolicyManager {
             return true;
         }
         return false;
-    }
-    activatePolicies(...policyEvents) {
-        policyEvents.forEach(policyEvent => this.activePolicyEvents[policyEvent] = true);
-    }
-    deactivatePolicies(...policyEvents) {
-        policyEvents.forEach(policyEvent => this.activePolicyEvents[policyEvent] = false);
-    }
-    isPolicyEventActive(policyEvent) {
+    };
+    InvalidationPolicyManager.prototype.activatePolicies = function () {
+        var _this = this;
+        var policyEvents = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            policyEvents[_i] = arguments[_i];
+        }
+        policyEvents.forEach(function (policyEvent) { return _this.activePolicyEvents[policyEvent] = true; });
+    };
+    InvalidationPolicyManager.prototype.deactivatePolicies = function () {
+        var _this = this;
+        var policyEvents = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            policyEvents[_i] = arguments[_i];
+        }
+        policyEvents.forEach(function (policyEvent) { return _this.activePolicyEvents[policyEvent] = false; });
+    };
+    InvalidationPolicyManager.prototype.isPolicyEventActive = function (policyEvent) {
         return this.activePolicyEvents[policyEvent];
-    }
-}
+    };
+    return InvalidationPolicyManager;
+}());
+export default InvalidationPolicyManager;
 //# sourceMappingURL=InvalidationPolicyManager.js.map
