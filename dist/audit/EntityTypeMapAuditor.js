@@ -1,15 +1,10 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const EntityTypeMap_1 = __importDefault(require("../entity-store/EntityTypeMap"));
+import EntityTypeMap from "../entity-store/EntityTypeMap";
 var EntityTypeMapAuditorEvent;
 (function (EntityTypeMapAuditorEvent) {
     EntityTypeMapAuditorEvent["Write"] = "Write";
     EntityTypeMapAuditorEvent["Evict"] = "Evict";
 })(EntityTypeMapAuditorEvent || (EntityTypeMapAuditorEvent = {}));
-class EntityTypeMapAudtior extends EntityTypeMap_1.default {
+export default class EntityTypeMapAudtior extends EntityTypeMap {
     constructor(config) {
         super();
         this.auditLog = config.auditLog;
@@ -31,5 +26,4 @@ class EntityTypeMapAudtior extends EntityTypeMap_1.default {
         return super.evict(dataId, storeFieldName);
     }
 }
-exports.default = EntityTypeMapAudtior;
 //# sourceMappingURL=EntityTypeMapAuditor.js.map

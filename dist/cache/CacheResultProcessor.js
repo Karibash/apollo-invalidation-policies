@@ -1,37 +1,31 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.CacheResultProcessor = exports.ReadResultStatus = void 0;
-const lodash_1 = __importDefault(require("lodash"));
-const core_1 = require("@apollo/client/core");
-const utilities_1 = require("@apollo/client/utilities");
-const helpers_1 = require("../helpers");
-const types_1 = require("../policies/types");
-var ReadResultStatus;
+import _ from "lodash";
+import { makeReference } from "@apollo/client/core";
+import { createFragmentMap, getFragmentDefinitions, getFragmentFromSelection, getOperationDefinition, isField, maybeDeepFreeze, resultKeyNameFromField, } from "@apollo/client/utilities";
+import { makeEntityId, isQuery } from "../helpers";
+import { RenewalPolicy } from "../policies/types";
+export var ReadResultStatus;
 (function (ReadResultStatus) {
     ReadResultStatus[ReadResultStatus["Evicted"] = 0] = "Evicted";
     ReadResultStatus[ReadResultStatus["Incomplete"] = 1] = "Incomplete";
     ReadResultStatus[ReadResultStatus["Complete"] = 2] = "Complete";
-})(ReadResultStatus = exports.ReadResultStatus || (exports.ReadResultStatus = {}));
+})(ReadResultStatus || (ReadResultStatus = {}));
 /**
  * Processes the result of a cache read/write to run invalidation policies on the deeply nested objects.
  */
-class CacheResultProcessor {
+export class CacheResultProcessor {
     constructor(config) {
         this.config = config;
     }
     getFieldsForQuery(options) {
-        const operationDefinition = utilities_1.getOperationDefinition(options.query);
-        const fragmentMap = utilities_1.createFragmentMap(utilities_1.getFragmentDefinitions(options.query));
+        const operationDefinition = getOperationDefinition(options.query);
+        const fragmentMap = createFragmentMap(getFragmentDefinitions(options.query));
         return operationDefinition.selectionSet.selections.reduce((acc, selection) => {
             var _a, _b;
-            if (utilities_1.isField(selection)) {
+            if (isField(selection)) {
                 acc.push(selection);
                 return acc;
             }
-            const selections = (_b = (_a = utilities_1.getFragmentFromSelection(selection, fragmentMap)) === null || _a === void 0 ? void 0 : _a.selectionSet) === null || _b === void 0 ? void 0 : _b.selections;
+            const selections = (_b = (_a = getFragmentFromSelection(selection, fragmentMap)) === null || _a === void 0 ? void 0 : _a.selectionSet) === null || _b === void 0 ? void 0 : _b.selections;
             if (selections) {
                 acc.push(...selections);
             }
@@ -40,10 +34,10 @@ class CacheResultProcessor {
     }
     processReadSubResult(parentResult, fieldNameOrIndex) {
         const { cache, invalidationPolicyManager, entityTypeMap } = this.config;
-        const result = lodash_1.default.isUndefined(fieldNameOrIndex)
+        const result = _.isUndefined(fieldNameOrIndex)
             ? parentResult
             : parentResult[fieldNameOrIndex];
-        if (lodash_1.default.isPlainObject(result)) {
+        if (_.isPlainObject(result)) {
             const { __typename } = result;
             const aggregateResultComplete = Object.keys(result).reduce((_acc, fieldName) => this.processReadSubResult(result, fieldName) ===
                 ReadResultStatus.Complete, true);
@@ -51,8 +45,8 @@ class CacheResultProcessor {
                 const id = cache.identify(result);
                 if (id) {
                     const renewalPolicy = invalidationPolicyManager.getRenewalPolicyForType(__typename);
-                    if (renewalPolicy === types_1.RenewalPolicy.AccessAndWrite ||
-                        renewalPolicy === types_1.RenewalPolicy.AccessOnly) {
+                    if (renewalPolicy === RenewalPolicy.AccessAndWrite ||
+                        renewalPolicy === RenewalPolicy.AccessOnly) {
                         entityTypeMap.renewEntity(id);
                     }
                     const evicted = invalidationPolicyManager.runReadPolicy({
@@ -60,7 +54,7 @@ class CacheResultProcessor {
                         dataId: id
                     });
                     if (evicted) {
-                        if (lodash_1.default.isPlainObject(parentResult) && fieldNameOrIndex) {
+                        if (_.isPlainObject(parentResult) && fieldNameOrIndex) {
                             delete parentResult[fieldNameOrIndex];
                         }
                         return ReadResultStatus.Evicted;
@@ -71,7 +65,7 @@ class CacheResultProcessor {
                 ? ReadResultStatus.Complete
                 : ReadResultStatus.Incomplete;
         }
-        else if (lodash_1.default.isArray(result)) {
+        else if (_.isArray(result)) {
             let aggregateSubResultStatus = ReadResultStatus.Complete;
             const subResultStatuses = result.map((_subResult, index) => {
                 const subResultStatus = this.processReadSubResult(result, index);
@@ -93,14 +87,14 @@ class CacheResultProcessor {
     processReadResult(result, options) {
         const { cache, entityTypeMap, invalidationPolicyManager } = this.config;
         const { rootId: dataId = "ROOT_QUERY" } = options;
-        if (lodash_1.default.isPlainObject(result)) {
-            if (helpers_1.isQuery(dataId)) {
+        if (_.isPlainObject(result)) {
+            if (isQuery(dataId)) {
                 const { variables } = options;
                 const aggregateResultComplete = this.getFieldsForQuery(options).reduce((acc, field) => {
                     var _a;
-                    const fieldName = utilities_1.resultKeyNameFromField(field);
+                    const fieldName = resultKeyNameFromField(field);
                     const subResultStatus = this.processReadSubResult(result, fieldName);
-                    const typename = (_a = entityTypeMap.readEntityById(helpers_1.makeEntityId(dataId, fieldName))) === null || _a === void 0 ? void 0 : _a.typename;
+                    const typename = (_a = entityTypeMap.readEntityById(makeEntityId(dataId, fieldName))) === null || _a === void 0 ? void 0 : _a.typename;
                     if (typename) {
                         const storeFieldName = cache.policies.getStoreFieldName({
                             typename,
@@ -109,8 +103,8 @@ class CacheResultProcessor {
                             variables,
                         });
                         const renewalPolicy = invalidationPolicyManager.getRenewalPolicyForType(typename);
-                        if (renewalPolicy === types_1.RenewalPolicy.AccessAndWrite ||
-                            renewalPolicy === types_1.RenewalPolicy.AccessOnly) {
+                        if (renewalPolicy === RenewalPolicy.AccessAndWrite ||
+                            renewalPolicy === RenewalPolicy.AccessOnly) {
                             entityTypeMap.renewEntity(dataId, storeFieldName);
                         }
                         const evicted = invalidationPolicyManager.runReadPolicy({
@@ -126,39 +120,39 @@ class CacheResultProcessor {
                     }
                     return acc && subResultStatus === ReadResultStatus.Complete;
                 }, true);
-                utilities_1.maybeDeepFreeze(result);
+                maybeDeepFreeze(result);
                 return aggregateResultComplete
                     ? ReadResultStatus.Complete
                     : ReadResultStatus.Incomplete;
             }
-            utilities_1.maybeDeepFreeze(result);
+            maybeDeepFreeze(result);
             return this.processReadSubResult(result);
         }
         return ReadResultStatus.Complete;
     }
     processWriteSubResult(result) {
         const { cache, invalidationPolicyManager, entityTypeMap } = this.config;
-        if (lodash_1.default.isPlainObject(result)) {
+        if (_.isPlainObject(result)) {
             const { __typename } = result;
             Object.keys(result).forEach((resultField) => this.processWriteSubResult(result[resultField]));
             if (__typename) {
                 const id = cache.identify(result);
                 if (id) {
                     const renewalPolicy = invalidationPolicyManager.getRenewalPolicyForType(__typename);
-                    if (renewalPolicy === types_1.RenewalPolicy.WriteOnly ||
-                        renewalPolicy === types_1.RenewalPolicy.AccessAndWrite) {
+                    if (renewalPolicy === RenewalPolicy.WriteOnly ||
+                        renewalPolicy === RenewalPolicy.AccessAndWrite) {
                         entityTypeMap.renewEntity(id);
                     }
                     invalidationPolicyManager.runWritePolicy(__typename, {
                         parent: {
                             id,
-                            ref: core_1.makeReference(id),
+                            ref: makeReference(id),
                         },
                     });
                 }
             }
         }
-        else if (lodash_1.default.isArray(result)) {
+        else if (_.isArray(result)) {
             result.forEach((resultListItem) => this.processWriteSubResult(resultListItem));
         }
     }
@@ -166,14 +160,14 @@ class CacheResultProcessor {
         var _a;
         const { dataId, variables, result } = options;
         const { entityTypeMap, cache, invalidationPolicyManager } = this.config;
-        if (lodash_1.default.isPlainObject(result)) {
+        if (_.isPlainObject(result)) {
             this.processWriteSubResult(result);
         }
-        if (dataId && helpers_1.isQuery(dataId) && lodash_1.default.isPlainObject(result)) {
+        if (dataId && isQuery(dataId) && _.isPlainObject(result)) {
             this.getFieldsForQuery(options).forEach((field) => {
                 var _a, _b, _c;
-                const fieldName = utilities_1.resultKeyNameFromField(field);
-                const typename = (_a = entityTypeMap.readEntityById(helpers_1.makeEntityId(dataId, fieldName))) === null || _a === void 0 ? void 0 : _a.typename;
+                const fieldName = resultKeyNameFromField(field);
+                const typename = (_a = entityTypeMap.readEntityById(makeEntityId(dataId, fieldName))) === null || _a === void 0 ? void 0 : _a.typename;
                 if (typename) {
                     const storeFieldName = cache.policies.getStoreFieldName({
                         typename,
@@ -186,8 +180,8 @@ class CacheResultProcessor {
                     // Write a query to the entity type map at `write` in addition to `merge` time so that we can keep track of its variables.
                     entityTypeMap.write(typename, dataId, storeFieldName, fieldVariables);
                     const renewalPolicy = invalidationPolicyManager.getRenewalPolicyForType(typename);
-                    if (renewalPolicy === types_1.RenewalPolicy.WriteOnly ||
-                        renewalPolicy === types_1.RenewalPolicy.AccessAndWrite) {
+                    if (renewalPolicy === RenewalPolicy.WriteOnly ||
+                        renewalPolicy === RenewalPolicy.AccessAndWrite) {
                         entityTypeMap.renewEntity(dataId, storeFieldName);
                     }
                     invalidationPolicyManager.runWritePolicy(typename, {
@@ -195,7 +189,7 @@ class CacheResultProcessor {
                             id: dataId,
                             fieldName,
                             storeFieldName,
-                            ref: core_1.makeReference(dataId),
+                            ref: makeReference(dataId),
                             variables: fieldVariables,
                         },
                     });
@@ -203,17 +197,17 @@ class CacheResultProcessor {
             });
         }
         else if (dataId) {
-            const typename = (_a = entityTypeMap.readEntityById(helpers_1.makeEntityId(dataId))) === null || _a === void 0 ? void 0 : _a.typename;
+            const typename = (_a = entityTypeMap.readEntityById(makeEntityId(dataId))) === null || _a === void 0 ? void 0 : _a.typename;
             if (typename) {
                 const renewalPolicy = invalidationPolicyManager.getRenewalPolicyForType(typename);
-                if (renewalPolicy === types_1.RenewalPolicy.WriteOnly ||
-                    renewalPolicy === types_1.RenewalPolicy.AccessAndWrite) {
+                if (renewalPolicy === RenewalPolicy.WriteOnly ||
+                    renewalPolicy === RenewalPolicy.AccessAndWrite) {
                     entityTypeMap.renewEntity(dataId);
                 }
                 invalidationPolicyManager.runWritePolicy(typename, {
                     parent: {
                         id: dataId,
-                        ref: core_1.makeReference(dataId),
+                        ref: makeReference(dataId),
                         variables,
                     },
                 });
@@ -221,5 +215,4 @@ class CacheResultProcessor {
         }
     }
 }
-exports.CacheResultProcessor = CacheResultProcessor;
 //# sourceMappingURL=CacheResultProcessor.js.map

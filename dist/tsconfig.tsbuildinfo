@@ -1574,7 +1574,7 @@
     },
     "options": {
       "target": 4,
-      "module": 1,
+      "module": 5,
       "moduleResolution": 2,
       "allowJs": true,
       "composite": true,

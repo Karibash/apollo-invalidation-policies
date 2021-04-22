@@ -1,10 +1,5 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const lodash_1 = __importDefault(require("lodash"));
-class AuditLog {
+import _ from "lodash";
+export default class AuditLog {
     constructor() {
         this._log = [];
     }
@@ -19,7 +14,7 @@ class AuditLog {
         this._log.push(auditLogEntry);
     }
     getLog(filter) {
-        return lodash_1.default.filter(this._log, filter);
+        return _.filter(this._log, filter);
     }
     printLog(filter) {
         this.getLog(filter).forEach(this.printLogEntry);
@@ -34,5 +29,4 @@ class AuditLog {
         console.groupEnd();
     }
 }
-exports.default = AuditLog;
 //# sourceMappingURL=AuditLog.js.map

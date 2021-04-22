@@ -1,16 +1,14 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const helpers_1 = require("../helpers");
+import { makeEntityId, isQuery } from "../helpers";
 /**
  * Watches the EntityStore for changes and performs side-effects to keep the EntityTypeMap synchronized with the data in the EntityStore.
  */
-class EntityStoreWatcher {
+export default class EntityStoreWatcher {
     constructor(config) {
         this.config = config;
         this.delete = (dataId, fieldName, args) => {
             const { entityStore, entityTypeMap, policies } = this.config;
             const result = this.storeFunctions.delete.call(entityStore, dataId, fieldName, args);
-            const entity = entityTypeMap.readEntityById(helpers_1.makeEntityId(dataId, fieldName));
+            const entity = entityTypeMap.readEntityById(makeEntityId(dataId, fieldName));
             const storeFieldName = fieldName && args
                 ? policies.getStoreFieldName({
                     typename: entity ? entity.typename : undefined,
@@ -23,7 +21,7 @@ class EntityStoreWatcher {
         };
         this.merge = (dataId, incomingStoreObject) => {
             const { entityStore, entityTypeMap } = this.config;
-            if (helpers_1.isQuery(dataId)) {
+            if (isQuery(dataId)) {
                 Object.keys(incomingStoreObject)
                     .filter((storeFieldName) => {
                     var _a;
@@ -93,5 +91,4 @@ class EntityStoreWatcher {
         entityStore.replace = replace;
     }
 }
-exports.default = EntityStoreWatcher;
 //# sourceMappingURL=EntityStoreWatcher.js.map

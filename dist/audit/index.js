@@ -1,5 +1,2 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-var InvalidationPolicyCacheAuditor_1 = require("./InvalidationPolicyCacheAuditor");
-Object.defineProperty(exports, "InvalidationPolicyCacheAuditor", { enumerable: true, get: function () { return InvalidationPolicyCacheAuditor_1.default; } });
+export { default as InvalidationPolicyCacheAuditor } from "./InvalidationPolicyCacheAuditor";
 //# sourceMappingURL=index.js.map

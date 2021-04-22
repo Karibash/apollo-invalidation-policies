@@ -1,10 +1,5 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const lodash_1 = __importDefault(require("lodash"));
-const helpers_1 = require("../helpers");
+import _ from "lodash";
+import { makeEntityId, isQuery, fieldNameFromStoreName } from "../helpers";
 /**
  * Map which stores a relationship between entities in the cache and their type
  * for efficient access of entities by type and types by entities on top of the Apollo EntityStore cache.
@@ -94,19 +89,19 @@ const helpers_1 = require("../helpers");
     }
     ```
  */
-class EntityTypeMap {
+export default class EntityTypeMap {
     constructor() {
         this.entitiesByType = {};
         this.entitiesById = {};
     }
     write(typename, dataId, storeFieldName, variables) {
         const fieldName = storeFieldName
-            ? helpers_1.fieldNameFromStoreName(storeFieldName)
+            ? fieldNameFromStoreName(storeFieldName)
             : undefined;
-        const entityId = helpers_1.makeEntityId(dataId, fieldName);
+        const entityId = makeEntityId(dataId, fieldName);
         const existingTypeMapEntity = this.readEntityById(entityId);
         if (existingTypeMapEntity) {
-            if (helpers_1.isQuery(dataId) && storeFieldName) {
+            if (isQuery(dataId) && storeFieldName) {
                 const storeFieldNameEntry = existingTypeMapEntity.storeFieldNames
                     .entries[storeFieldName];
                 if (storeFieldNameEntry) {
@@ -123,7 +118,7 @@ class EntityTypeMap {
         else {
             let newEntity;
             const cacheTime = Date.now();
-            if (helpers_1.isQuery(dataId) && storeFieldName) {
+            if (isQuery(dataId) && storeFieldName) {
                 newEntity = {
                     dataId,
                     typename,
@@ -143,16 +138,16 @@ class EntityTypeMap {
                     cacheTime,
                 };
             }
-            lodash_1.default.set(this.entitiesByType, [typename, entityId], newEntity);
+            _.set(this.entitiesByType, [typename, entityId], newEntity);
             this.entitiesById[entityId] = newEntity;
         }
     }
     evict(dataId, storeFieldName) {
         var _a;
         const fieldName = storeFieldName
-            ? helpers_1.fieldNameFromStoreName(storeFieldName)
+            ? fieldNameFromStoreName(storeFieldName)
             : null;
-        const entityId = helpers_1.makeEntityId(dataId, fieldName);
+        const entityId = makeEntityId(dataId, fieldName);
         const entity = this.readEntityById(entityId);
         if (!entity) {
             return;
@@ -185,12 +180,12 @@ class EntityTypeMap {
     }
     renewEntity(dataId, storeFieldName) {
         const fieldName = storeFieldName
-            ? helpers_1.fieldNameFromStoreName(storeFieldName)
+            ? fieldNameFromStoreName(storeFieldName)
             : undefined;
-        const entity = this.entitiesById[helpers_1.makeEntityId(dataId, fieldName)];
+        const entity = this.entitiesById[makeEntityId(dataId, fieldName)];
         if (entity) {
             const cacheTime = Date.now();
-            if (helpers_1.isQuery(dataId) && storeFieldName) {
+            if (isQuery(dataId) && storeFieldName) {
                 const storeFieldNameEntry = entity.storeFieldNames.entries[storeFieldName];
                 if (storeFieldNameEntry) {
                     storeFieldNameEntry.cacheTime = cacheTime;
@@ -223,5 +218,4 @@ class EntityTypeMap {
         this.entitiesByType = {};
     }
 }
-exports.default = EntityTypeMap;
 //# sourceMappingURL=EntityTypeMap.js.map

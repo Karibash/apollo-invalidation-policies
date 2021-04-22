@@ -1,17 +1,11 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.AuditType = void 0;
-const InvalidationPolicyManager_1 = __importDefault(require("../policies/InvalidationPolicyManager"));
-var AuditType;
+import InvalidationPolicyManager from "../policies/InvalidationPolicyManager";
+export var AuditType;
 (function (AuditType) {
     AuditType["Read"] = "Read";
     AuditType["Write"] = "Write";
     AuditType["Evict"] = "Evict";
-})(AuditType = exports.AuditType || (exports.AuditType = {}));
-class InvalidationPolicyManagerAuditor extends InvalidationPolicyManager_1.default {
+})(AuditType || (AuditType = {}));
+export default class InvalidationPolicyManagerAuditor extends InvalidationPolicyManager {
     constructor(config) {
         super(config);
         this.auditLog = config.auditLog;
@@ -40,5 +34,4 @@ class InvalidationPolicyManagerAuditor extends InvalidationPolicyManager_1.defau
         return super.runEvictPolicy(typeName, policyMeta);
     }
 }
-exports.default = InvalidationPolicyManagerAuditor;
 //# sourceMappingURL=InvalidationPolicyManagerAuditor.js.map

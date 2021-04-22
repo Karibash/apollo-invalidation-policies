@@ -1,4 +1,3 @@
-"use strict";
 var __rest = (this && this.__rest) || function (s, e) {
     var t = {};
     for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
@@ -10,19 +9,15 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const lodash_1 = __importDefault(require("lodash"));
-const types_1 = require("./types");
-const helpers_1 = require("../helpers");
-const core_1 = require("@apollo/client/core");
-const types_2 = require("./types");
+import _ from "lodash";
+import { InvalidationPolicyEvent, InvalidationPolicyLifecycleEvent, } from "./types";
+import { makeEntityId } from "../helpers";
+import { makeReference } from "@apollo/client/core";
+import { RenewalPolicy } from "./types";
 /**
  * Executes invalidation policies for types when they are modified, evicted or read from the cache.
  */
-class InvalidationPolicyManager {
+export default class InvalidationPolicyManager {
     constructor(config) {
         this.config = config;
         this.policyActionStorage = {};
@@ -41,19 +36,19 @@ class InvalidationPolicyManager {
         const { types: policyTypes = {}, timeToLive: defaultTimeToLive } = policies;
         return Object.keys(policyTypes).reduce((acc, type) => {
             const policy = policyTypes[type];
-            acc[types_1.InvalidationPolicyEvent.Read] =
-                acc[types_1.InvalidationPolicyEvent.Read] || !!policy.timeToLive;
-            acc[types_1.InvalidationPolicyEvent.Write] =
-                acc[types_1.InvalidationPolicyEvent.Write] ||
-                    !!policy[types_1.InvalidationPolicyLifecycleEvent.Write];
-            acc[types_1.InvalidationPolicyEvent.Evict] =
-                acc[types_1.InvalidationPolicyEvent.Evict] ||
-                    !!policy[types_1.InvalidationPolicyLifecycleEvent.Evict];
+            acc[InvalidationPolicyEvent.Read] =
+                acc[InvalidationPolicyEvent.Read] || !!policy.timeToLive;
+            acc[InvalidationPolicyEvent.Write] =
+                acc[InvalidationPolicyEvent.Write] ||
+                    !!policy[InvalidationPolicyLifecycleEvent.Write];
+            acc[InvalidationPolicyEvent.Evict] =
+                acc[InvalidationPolicyEvent.Evict] ||
+                    !!policy[InvalidationPolicyLifecycleEvent.Evict];
             return acc;
         }, {
-            [types_1.InvalidationPolicyEvent.Read]: !!defaultTimeToLive,
-            [types_1.InvalidationPolicyEvent.Write]: false,
-            [types_1.InvalidationPolicyEvent.Evict]: false,
+            [InvalidationPolicyEvent.Read]: !!defaultTimeToLive,
+            [InvalidationPolicyEvent.Write]: false,
+            [InvalidationPolicyEvent.Evict]: false,
         });
     }
     getPolicy(typeName) {
@@ -72,7 +67,7 @@ class InvalidationPolicyManager {
         if (!policyForType) {
             return null;
         }
-        return policyForType[types_1.InvalidationPolicyLifecycleEvent[policyEvent]];
+        return policyForType[InvalidationPolicyLifecycleEvent[policyEvent]];
     }
     runPolicyEvent(typeName, policyEvent, policyMeta) {
         const { entityTypeMap } = this.config;
@@ -94,11 +89,11 @@ class InvalidationPolicyManager {
                 if (storeFieldNames) {
                     Object.keys(storeFieldNames.entries).forEach((storeFieldName) => {
                         policyAction(mutedCacheOperations, Object.assign({ id: dataId, fieldName,
-                            storeFieldName, variables: storeFieldNames.entries[storeFieldName].variables, ref: core_1.makeReference(dataId), storage: this.getPolicyActionStorage(storeFieldName) }, policyMeta));
+                            storeFieldName, variables: storeFieldNames.entries[storeFieldName].variables, ref: makeReference(dataId), storage: this.getPolicyActionStorage(storeFieldName) }, policyMeta));
                     });
                 }
                 else {
-                    policyAction(mutedCacheOperations, Object.assign({ id: dataId, storage: this.getPolicyActionStorage(dataId), ref: core_1.makeReference(dataId) }, policyMeta));
+                    policyAction(mutedCacheOperations, Object.assign({ id: dataId, storage: this.getPolicyActionStorage(dataId), ref: makeReference(dataId) }, policyMeta));
                 }
             });
         });
@@ -106,19 +101,19 @@ class InvalidationPolicyManager {
     getRenewalPolicyForType(typename) {
         var _a, _b, _c, _d;
         const { policies } = this.config;
-        return ((_d = (_c = (_b = (_a = policies.types) === null || _a === void 0 ? void 0 : _a[typename]) === null || _b === void 0 ? void 0 : _b.renewalPolicy) !== null && _c !== void 0 ? _c : policies.renewalPolicy) !== null && _d !== void 0 ? _d : types_2.RenewalPolicy.WriteOnly);
+        return ((_d = (_c = (_b = (_a = policies.types) === null || _a === void 0 ? void 0 : _a[typename]) === null || _b === void 0 ? void 0 : _b.renewalPolicy) !== null && _c !== void 0 ? _c : policies.renewalPolicy) !== null && _d !== void 0 ? _d : RenewalPolicy.WriteOnly);
     }
     runWritePolicy(typeName, policyMeta) {
-        return this.runPolicyEvent(typeName, types_1.InvalidationPolicyEvent.Write, policyMeta);
+        return this.runPolicyEvent(typeName, InvalidationPolicyEvent.Write, policyMeta);
     }
     runEvictPolicy(typeName, policyMeta) {
-        return this.runPolicyEvent(typeName, types_1.InvalidationPolicyEvent.Evict, policyMeta);
+        return this.runPolicyEvent(typeName, InvalidationPolicyEvent.Evict, policyMeta);
     }
     // Runs the read poliy on the entity, returning whether its TTL was expired.
     runReadPolicy({ typename, dataId, fieldName, storeFieldName, reportOnly = false, }) {
         var _a;
         const { cacheOperations, entityTypeMap, policies } = this.config;
-        const entityId = helpers_1.makeEntityId(dataId, fieldName);
+        const entityId = makeEntityId(dataId, fieldName);
         const typeMapEntity = entityTypeMap.readEntityById(entityId);
         if (!typeMapEntity) {
             return false;
@@ -139,7 +134,7 @@ class InvalidationPolicyManager {
             entityCacheTime = typeMapEntity.cacheTime;
         }
         const timeToLive = ((_a = this.getPolicy(typename)) === null || _a === void 0 ? void 0 : _a.timeToLive) || policies.timeToLive;
-        if (lodash_1.default.isNumber(entityCacheTime) &&
+        if (_.isNumber(entityCacheTime) &&
             timeToLive &&
             Date.now() > entityCacheTime + timeToLive) {
             if (!reportOnly) {
@@ -163,5 +158,4 @@ class InvalidationPolicyManager {
         return this.activePolicyEvents[policyEvent];
     }
 }
-exports.default = InvalidationPolicyManager;
 //# sourceMappingURL=InvalidationPolicyManager.js.map
